@@ -9,6 +9,10 @@ after installation you can start it from you terminal like this:
        
     $ pypomo
 
+Snapshot
+=====
+![My image](https://raw.github.com/shahinism/PyPomo/master/Snapshots/window.png)
+
 Installation
 =====
 
