@@ -1,0 +1,51 @@
+Metadata-Version: 1.0
+Name: PyPomo
+Version: 0.5.0
+Summary: A pomodoro time management system software.
+Home-page: http://shahinism.github.com/pypomo
+Author: Shahin Azad
+Author-email: ishahinism@gmail.com
+License: GPL
+Description: ==========
+        PyPOMO
+        ==========
+        
+        Pypomo is a small software to help you in more focus in your work.
+        it uses pomodoro technic that you can find here:
+        http://www.pomodorotechnique.com/
+        
+        after installation you can start it from you terminal like this:
+           # pypomo
+        
+        Inistallation
+        =============
+        
+        To install PyPomo in a linux distribution you need pysetuptools
+        and pyqt4. install this requirements and after that run this commands:
+        
+            $ git clone ...
+            $ cd PyPomo
+            $ sudo python setup.py install
+        
+        Usage
+        =====
+        
+        Oh come on! this is a gui program. but away PyPomos systemtry icon may
+        need some description. it has three state (color):
+        
+        * Red: this color means you need to do your job. there are a lot of 
+          pomodoros you need to do.
+        
+        * Green: this means it's your rest time. Enjoy it. I know you will love it :D
+        
+        * Yellow: this means you did an interrupt. Go back in your work as soon as you 
+          can!
+        
+        Thanks to:
+        ==========
+        
+        I have to say thank you to "Francesco Cirillo" for inventing this great time
+        management system. then, Thank you Francesco :-*
+        
+Keywords: time time-management
+Platform: UNKNOWN

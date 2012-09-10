@@ -1,0 +1,3 @@
+[console_scripts]
+pypomo = src.PyPomo:main
+

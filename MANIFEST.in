@@ -1,0 +1,4 @@
+include *.txt
+include src/graphics/*.svg
+include src/sounds/*.wav
+recursive-include docs *.txt
