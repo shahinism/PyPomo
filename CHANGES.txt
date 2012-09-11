@@ -1,0 +1,6 @@
+v0.5.3, Tue Sep 11 17:25:35 IRDT 2012.
+-- Minimize to system try added. All close action except
+   close button will minimize the window.
+
+v0.5.0, Tue Sep 10 18:12:26 IRDT 2012 -- Initial release.
+

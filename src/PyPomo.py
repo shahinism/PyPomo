@@ -18,13 +18,18 @@ class Form(QDialog):
         self.ding_sound_path = os.path.join(src_dir, "sounds", "ding.wav")
         # UI initializer
         self.setupUi()
-        
-    def setupUi(self):
 
+    def systemtry_icon(self):
         # its icon initialized in self.var_init to automatic reset the icon after the reset pressed
         self.sys_try_icon = QSystemTrayIcon(self)
         self.sys_try_icon.setToolTip("PyPomo Time management system")
-
+        self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
+        # Show systemtry icon
+        self.sys_try_icon.show()
+        
+    def setupUi(self):
+        # First of all setup the systemtry Icon
+        self.systemtry_icon()
         # This two buttons have parent! now I can disable and enable theme.
         self.start_button = QPushButton(self.tr("&Start"))
         self.interrupt_button = QPushButton(self.tr("&Interrupt"))
@@ -57,18 +62,6 @@ class Form(QDialog):
         self.rdobtn_short_rest = QRadioButton(self.tr("&Short Rest (15 min)"))
         self.rdobtn_long_rest = QRadioButton(self.tr("&Long Rest (25 min)"))
         self.rdobtn_long_rest.setChecked(True)
-
-    # SIGNAL/SLOT:
-
-        # Timeout signal for pomo and rest timer
-        self.pomo_timer.timeout.connect(self.update_pomo_prog)
-        self.rest_timer.timeout.connect(self.update_rest_prog)
-
-        # Buttons clicked signals
-        self.start_button.clicked.connect(self.run_pomo)
-        self.interrupt_button.clicked.connect(self.interrupt_func)
-        reset_button.clicked.connect(self.reset_func)
-        close_button.clicked.connect(qApp.quit)
 
         rest_rdo_group = QGroupBox(self.tr("Long rest configuration"))
         rdo_layout = QHBoxLayout()
@@ -106,12 +99,47 @@ class Form(QDialog):
         layout.addLayout(btn_layout, 3, 0, 1, 2)
         self.setLayout(layout)
 
+        # SIGNAL/SLOT:
+        # Timeout signal for pomo and rest timer
+        self.pomo_timer.timeout.connect(self.update_pomo_prog)
+        self.rest_timer.timeout.connect(self.update_rest_prog)
+
+        # Buttons clicked signals
+        self.start_button.clicked.connect(self.run_pomo)
+        self.interrupt_button.clicked.connect(self.interrupt_func)
+        reset_button.clicked.connect(self.reset_func)
+        close_button.clicked.connect(qApp.quit)
+        self.sys_try_icon.activated['QSystemTrayIcon::ActivationReason'].connect(self.show_window)
+        
         # Root window property
         self.setWindowTitle(self.tr("PyPomo"))
         self.setWindowIcon(QIcon(self.red_icon_path))
 
-        # Show systemtry icon
-        self.sys_try_icon.show()
+    def show_window(self, reason):
+        """
+        This function will use to show the window again after user minimized it.
+        """
+        # The reason will send from QSystemTrayIcon::ActivationReason!
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.setVisible(True)
+
+    def closeEvent(self, event):
+        """
+        This function will re implement closeEvent function. This will happen
+        when the user close the window by 'X' button or so.
+        """
+        # Here I ignored the event that will close the window
+        event.ignore()
+        # To have same effect I just called done function that who know what to do!
+        self.done('closeEvent')
+        
+    def done(self, r):
+        """
+        This function will re implement done function. This will happen when the user
+        use 'ESC' button to close the dialog window.
+        """
+        # This will make the dialog window invisible!
+        self.setVisible(False)
         
     def run_pomo(self):
         # If it's pomodoro time start button has to be disabled and interrupt button
@@ -242,9 +270,10 @@ class Form(QDialog):
         self.rest_time_progress.setValue(0)
         self.pomo_step = 0
         self.rest_step = 0
-        self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
         self.interrupt_button.setEnabled(False)
         self.start_button.setEnabled(True)
+        # It has to be here. After a reset you'll need it :D
+        self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
         
     def reset_func(self):
         # Stop every thing and make program clean!
