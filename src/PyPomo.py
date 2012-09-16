@@ -5,6 +5,7 @@ import os
 from   subprocess   import call
 from   PyQt4.QtGui  import *
 from   PyQt4.QtCore import *
+import answering_machine
 
 class Form(QDialog):
     def __init__(self, parent = None):
@@ -149,10 +150,10 @@ class Form(QDialog):
         # Set the flag to retrive currct information in update_labels function
         self.flag = 'Pomodoro'
         self.update_labels(self.flag)
-
         # Every seccond it will generate a self.pomo_timer.timeout() after evry
         # Signal update_pomo_prog will call.
         self.pomo_timer.start(1000)
+        self.chat_answer_machine()        
 
     def update_pomo_prog(self):
         # The following expression will calcualte that how much is 1 seccond from 25 minutes
@@ -218,18 +219,18 @@ class Form(QDialog):
     def update_labels(self, flag):
         current_time = QTime.currentTime()
         if flag == 'Pomodoro':
-            stop_time = current_time.addSecs(25 * 60) # it'll show 25 minutes later ;-)
+            self.stop_time = current_time.addSecs(25 * 60) # it'll show 25 minutes later ;-)
         elif flag == 'Rest':
-            stop_time = current_time.addSecs(5 * 60) # it'll show 5 minutes later
+            self.stop_time = current_time.addSecs(5 * 60) # it'll show 5 minutes later
         elif flag == 'Long Rest':
             # calculate the proper stop time. it'll be different on rest times.
             if self.rdobtn_short_rest.isChecked():
-                stop_time = current_time.addSecs(15 * 60)
+                self.stop_time = current_time.addSecs(15 * 60)
             elif self.rdobtn_long_rest.isChecked():
-                stop_time = current_time.addSecs(25 * 60) 
+                self.stop_time = current_time.addSecs(25 * 60) 
 
         self.start_label.setText(self.tr("Start Time: %s" % current_time.toString()))
-        self.stop_label.setText(self.tr("Stop Time: %s" % stop_time.toString()))
+        self.stop_label.setText(self.tr("Stop Time: %s" % self.stop_time.toString()))
         self.status_label.setText(self.tr("Status: %s" % flag))
         self.total_label.setText(self.tr("Pomodoros: %d" % self.total_pomo))
 
@@ -280,6 +281,10 @@ class Form(QDialog):
         self.rest_timer.stop()
         self.pomo_timer.stop()
         self.var_init()
+
+    def chat_answer_machine(self):
+        message = str(self.stop_time.toString())
+        answering_machine.DBus_Answer(message)
         
 def main():
     app = QApplication(sys.argv)
