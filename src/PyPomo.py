@@ -2,6 +2,7 @@
 
 import sys
 import os
+import re
 from   subprocess   import call
 from   PyQt4.QtGui  import *
 from   PyQt4.QtCore import *
@@ -47,7 +48,15 @@ class Form(QDialog):
         self.stop_label = QLabel()
         self.status_label = QLabel()
         self.total_label = QLabel()
-
+        self.am_enabler = QCheckBox(self.tr("Enable answering machine")) # Checkbox to enable/disable answering machine
+        self.am_enabler.setChecked(True)
+        self.am_text = QLineEdit() # Answering machines text.
+        self.am_text.setText(self.tr("PyPomo: Hi, my master is not able to answer you right now, you have to wait. He may will be able at $AnswerTime"))
+        am_label = QLabel(self.tr("&Answer:"))
+        am_label.setBuddy(self.am_text)
+        am_tip = QLabel(self.tr("<strong>Tip</strong>: You can use <strong>$AnswerTime</strong> tag to show your pomodoros end time! "))
+        pomo_time_label = QLabel(self.tr("Pomodoro Timer:"))
+        rest_time_label = QLabel(self.tr("Rest Timer:"))
         # This is the pomodoro timers progress bar
         self.pomo_time_progress = QProgressBar()
         # This is the rest timers progress bar
@@ -60,8 +69,8 @@ class Form(QDialog):
         self.var_init()
 
         # Radio buttons initialized. and long rest radio button is checked
-        self.rdobtn_short_rest = QRadioButton(self.tr("&Short Rest (15 min)"))
-        self.rdobtn_long_rest = QRadioButton(self.tr("&Long Rest (25 min)"))
+        self.rdobtn_short_rest = QRadioButton(self.tr("&Short (15 min)"))
+        self.rdobtn_long_rest = QRadioButton(self.tr("&Long (25 min)"))
         self.rdobtn_long_rest.setChecked(True)
 
         rest_rdo_group = QGroupBox(self.tr("Long rest configuration"))
@@ -77,7 +86,9 @@ class Form(QDialog):
         time_group.setLayout(time_label_layout)
 
         prog_layout = QVBoxLayout()
+        prog_layout.addWidget(pomo_time_label)
         prog_layout.addWidget(self.pomo_time_progress)
+        prog_layout.addWidget(rest_time_label)
         prog_layout.addWidget(self.rest_time_progress)
 
         state_group = QGroupBox(self.tr("State"))
@@ -91,14 +102,42 @@ class Form(QDialog):
         btn_layout.addWidget(self.interrupt_button)
         btn_layout.addWidget(reset_button)
         btn_layout.addWidget(close_button)
-        
-        layout = QGridLayout()
-        layout.addWidget(time_group, 0, 0, 1, 2)
-        layout.addLayout(prog_layout, 1, 0)
-        layout.addWidget(state_group, 1, 1)
-        layout.addWidget(rest_rdo_group, 2, 0, 1, 2)
-        layout.addLayout(btn_layout, 3, 0, 1, 2)
-        self.setLayout(layout)
+
+        # Answering machine configuration group:
+        am_group = QGroupBox(self.tr("Answering machines massage"))
+        am_group_layout = QVBoxLayout()
+        am_group_layout.addWidget(self.am_enabler)
+        am_group_layout.addWidget(am_label)
+        am_group_layout.addWidget(self.am_text)
+        am_group_layout.addWidget(am_tip)
+        am_group.setLayout(am_group_layout)
+
+        # Tab widget initializer:
+        tab_widget = QTabWidget()
+        main_tab = QWidget() # Main tab
+        config_tab = QWidget() # config tab
+
+        # Main_tab layout:
+        mt_layout = QGridLayout(main_tab)
+        mt_layout.addWidget(time_group, 0, 0, 1, 2)
+        mt_layout.addLayout(prog_layout, 1, 0, 2, 1)
+        mt_layout.addWidget(state_group, 1, 1, 2, 1)
+        mt_layout.addLayout(btn_layout, 3, 0, 1, 2)
+
+        # Config_tab layout:
+        ct_layout = QGridLayout(config_tab)
+        ct_layout.addWidget(rest_rdo_group, 0, 0, 1, 2)
+        ct_layout.addWidget(am_group, 1, 0, 1, 2)
+
+        # Add widgets to the tabs. 
+        tab_widget.addTab(main_tab, self.tr("&Main"))
+        tab_widget.addTab(config_tab, self.tr("&Configure"))
+
+        # Add tab widget to the main dialog window
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(tab_widget)
+
+        self.setLayout(main_layout)
 
         # SIGNAL/SLOT:
         # Timeout signal for pomo and rest timer
@@ -153,7 +192,8 @@ class Form(QDialog):
         # Every seccond it will generate a self.pomo_timer.timeout() after evry
         # Signal update_pomo_prog will call.
         self.pomo_timer.start(1000)
-        self.chat_answer_machine()        
+        if self.am_enabler.isChecked():
+            self.chat_answer_machine()
 
     def update_pomo_prog(self):
         # The following expression will calcualte that how much is 1 seccond from 25 minutes
@@ -283,7 +323,12 @@ class Form(QDialog):
         self.var_init()
 
     def chat_answer_machine(self):
-        message = str(self.stop_time.toString())
+        # Here PyPomo will search if there is a tag like '$AnswerTime' replace it with current session stop time.
+        message = str(self.am_text.text())
+        time_tag = re.compile(r'\$AnswerTime')
+        search_tag = re.search(time_tag, message)
+        if search_tag:
+            message = re.sub(r'\$AnswerTime', str(self.stop_time.toString()), message)
         answering_machine.DBus_Answer(message)
         
 def main():
