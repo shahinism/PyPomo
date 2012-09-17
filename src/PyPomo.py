@@ -19,6 +19,7 @@ class Form(QDialog):
         self.yellow_icon_path = os.path.join(src_dir, "graphics", "yellow_icon.svg")
         self.ding_sound_path = os.path.join(src_dir, "sounds", "ding.wav")
         # UI initializer
+        self.am_run_count = 0
         self.setupUi()
 
     def systemtry_icon(self):
@@ -358,8 +359,9 @@ class Form(QDialog):
         search_tag = re.search(time_tag, message)
         if search_tag:
             message = re.sub(r'\$AnswerTime', str(self.stop_time.toString()), message)
-
-        answering_machine.DBus_Answer(message)
+        if self.am_run_count == 0:
+            answering_machine.DBus_Answer(message)
+            self.am_run_count += 1
         
 def trace(frame, event, arg):
     print "%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)

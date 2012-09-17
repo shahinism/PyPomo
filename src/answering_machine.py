@@ -3,6 +3,7 @@
 import sys
 import dbus
 from PyQt4.QtGui import QApplication
+from PyQt4.QtCore import Qt
 from dbus.mainloop.qt import DBusQtMainLoop
 
 class DBus_Answer():
@@ -23,7 +24,7 @@ class DBus_Answer():
 
         #if purple.PurpleAccountGetUsername(account) != sender:
         purple.PurpleConvImSend(purple.PurpleConvIm(conversation), self.answer)
-
+        
 def main(message):
     # This signal function call and the line after that is here
     # to help me Quit after pressing 'Ctrl+C'
