@@ -32,6 +32,13 @@ class Form(QDialog):
     def setupUi(self):
         # First of all setup the systemtry Icon
         self.systemtry_icon()
+
+        # System tray menus actions:
+        self.exit_action = QAction("Exit", self)
+        self.start_action = QAction("Start", self)
+        self.interrupt_action = QAction("Interrupt", self)
+        self.reset_action = QAction("Reset", self)
+        self.show_window_action = QAction("Show Window", self)
         # This two buttons have parent! now I can disable and enable theme.
         self.start_button = QPushButton(self.tr("&Start"))
         self.interrupt_button = QPushButton(self.tr("&Interrupt"))
@@ -139,6 +146,16 @@ class Form(QDialog):
 
         self.setLayout(main_layout)
 
+        try_menu = QMenu()
+        try_menu.addAction(self.show_window_action)
+        try_menu.addSeparator()
+        try_menu.addAction(self.start_action)
+        try_menu.addAction(self.interrupt_action)
+        try_menu.addAction(self.reset_action)
+        try_menu.addSeparator()
+        try_menu.addAction(self.exit_action)
+        self.sys_try_icon.setContextMenu(try_menu)
+        
         # SIGNAL/SLOT:
         # Timeout signal for pomo and rest timer
         self.pomo_timer.timeout.connect(self.update_pomo_prog)
@@ -150,6 +167,12 @@ class Form(QDialog):
         reset_button.clicked.connect(self.reset_func)
         close_button.clicked.connect(qApp.quit)
         self.sys_try_icon.activated['QSystemTrayIcon::ActivationReason'].connect(self.show_window)
+
+        self.exit_action.triggered.connect(qApp.quit)
+        self.start_action.triggered.connect(self.run_pomo)
+        self.interrupt_action.triggered.connect(self.interrupt_func)
+        self.reset_action.triggered.connect(self.reset_func)
+        self.show_window_action.triggered.connect(lambda x: self.setVisible(True))
         
         # Root window property
         self.setWindowTitle(self.tr("PyPomo"))
@@ -184,8 +207,10 @@ class Form(QDialog):
     def run_pomo(self):
         # If it's pomodoro time start button has to be disabled and interrupt button
         self.start_button.setEnabled(False)
+        self.start_action.setEnabled(False)
         self.interrupt_button.setEnabled(True)
-
+        self.interrupt_action.setEnabled(True)
+        
         # Set the flag to retrive currct information in update_labels function
         self.flag = 'Pomodoro'
         self.update_labels(self.flag)
@@ -253,7 +278,9 @@ class Form(QDialog):
             self.rest_timer.stop()
             # Enable start button and disable interrupt. 
             self.start_button.setEnabled(True)
+            self.start_action.setEnabled(True)
             self.interrupt_button.setEnabled(False)
+            self.interrupt_action.setEnabled(False)
             self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
 
     def update_labels(self, flag):
@@ -312,7 +339,9 @@ class Form(QDialog):
         self.pomo_step = 0
         self.rest_step = 0
         self.interrupt_button.setEnabled(False)
+        self.interrupt_action.setEnabled(False)
         self.start_button.setEnabled(True)
+        self.start_action.setEnabled(True)
         # It has to be here. After a reset you'll need it :D
         self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
         
@@ -329,13 +358,25 @@ class Form(QDialog):
         search_tag = re.search(time_tag, message)
         if search_tag:
             message = re.sub(r'\$AnswerTime', str(self.stop_time.toString()), message)
+
         answering_machine.DBus_Answer(message)
         
+def trace(frame, event, arg):
+    print "%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)
+    return trace
+
+def test():
+    print "Line 8"
+    print "Line 9"
+
 def main():
+#    sys.settrace(trace)
+#    test()
     app = QApplication(sys.argv)
     run = Form()
     run.show()
     sys.exit(app.exec_())
+    
 
 if __name__ == "__main__":
     main()
