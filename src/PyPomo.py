@@ -19,6 +19,9 @@ class Form(QDialog):
         self.yellow_icon_path = os.path.join(src_dir, "graphics", "yellow_icon.svg")
         self.ding_sound_path = os.path.join(src_dir, "sounds", "ding.wav")
         # UI initializer
+        # This flag will helps python to run answering_machine module just one time.
+        # if it's doing it more than one time (Such as interrupt/restart function call)
+        # program will die with a segmentation fault problem.
         self.am_run_count = 0
         self.setupUi()
 
@@ -48,6 +51,11 @@ class Form(QDialog):
 
         # it's the operations flag. it has three types: pomo, rest, long-rest
         self.flag = None
+
+        # Tab widget initializer:
+        tab_widget = QTabWidget()
+        main_tab = QWidget() # Main tab
+        self.config_tab = QWidget() # config tab
 
         # it's the number of done pomodoros. if total_pomo % 4 == 0 then user can
         # tak a long rest.
@@ -120,11 +128,6 @@ class Form(QDialog):
         am_group_layout.addWidget(am_tip)
         am_group.setLayout(am_group_layout)
 
-        # Tab widget initializer:
-        tab_widget = QTabWidget()
-        main_tab = QWidget() # Main tab
-        config_tab = QWidget() # config tab
-
         # Main_tab layout:
         mt_layout = QGridLayout(main_tab)
         mt_layout.addWidget(time_group, 0, 0, 1, 2)
@@ -133,13 +136,13 @@ class Form(QDialog):
         mt_layout.addLayout(btn_layout, 3, 0, 1, 2)
 
         # Config_tab layout:
-        ct_layout = QGridLayout(config_tab)
+        ct_layout = QGridLayout(self.config_tab)
         ct_layout.addWidget(rest_rdo_group, 0, 0, 1, 2)
         ct_layout.addWidget(am_group, 1, 0, 1, 2)
 
         # Add widgets to the tabs. 
         tab_widget.addTab(main_tab, self.tr("&Main"))
-        tab_widget.addTab(config_tab, self.tr("&Configure"))
+        tab_widget.addTab(self.config_tab, self.tr("&Configure"))
 
         # Add tab widget to the main dialog window
         main_layout = QVBoxLayout()
@@ -211,7 +214,8 @@ class Form(QDialog):
         self.start_action.setEnabled(False)
         self.interrupt_button.setEnabled(True)
         self.interrupt_action.setEnabled(True)
-        
+
+        self.config_tab.setEnabled(False)
         # Set the flag to retrive currct information in update_labels function
         self.flag = 'Pomodoro'
         self.update_labels(self.flag)
@@ -345,6 +349,7 @@ class Form(QDialog):
         self.start_action.setEnabled(True)
         # It has to be here. After a reset you'll need it :D
         self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
+        self.config_tab.setEnabled(True)
         
     def reset_func(self):
         # Stop every thing and make program clean!
@@ -363,17 +368,7 @@ class Form(QDialog):
             answering_machine.DBus_Answer(message)
             self.am_run_count += 1
         
-def trace(frame, event, arg):
-    print "%s, %s:%d" % (event, frame.f_code.co_filename, frame.f_lineno)
-    return trace
-
-def test():
-    print "Line 8"
-    print "Line 9"
-
 def main():
-#    sys.settrace(trace)
-#    test()
     app = QApplication(sys.argv)
     run = Form()
     run.show()
