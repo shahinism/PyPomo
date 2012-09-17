@@ -38,7 +38,7 @@ class Form(QDialog):
         self.systemtry_icon()
 
         # System tray menus actions:
-        self.exit_action = QAction("Exit", self)
+        self.exit_action = QAction("Quit", self)
         self.start_action = QAction("Start", self)
         self.interrupt_action = QAction("Interrupt", self)
         self.reset_action = QAction("Reset", self)
@@ -46,7 +46,7 @@ class Form(QDialog):
         # This two buttons have parent! now I can disable and enable theme.
         self.start_button = QPushButton(self.tr("&Start"))
         self.interrupt_button = QPushButton(self.tr("&Interrupt"))
-        close_button = QPushButton(self.tr("&Close"))
+        close_button = QPushButton(self.tr("&Quit"))
         reset_button = QPushButton(self.tr("&Reset"))
 
         # it's the operations flag. it has three types: pomo, rest, long-rest
@@ -214,8 +214,8 @@ class Form(QDialog):
         self.start_action.setEnabled(False)
         self.interrupt_button.setEnabled(True)
         self.interrupt_action.setEnabled(True)
-
         self.config_tab.setEnabled(False)
+        self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
         # Set the flag to retrive currct information in update_labels function
         self.flag = 'Pomodoro'
         self.update_labels(self.flag)
