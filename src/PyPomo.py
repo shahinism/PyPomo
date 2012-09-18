@@ -64,8 +64,6 @@ class Form(QDialog):
         self.stop_label = QLabel()
         self.status_label = QLabel()
         self.total_label = QLabel()
-        self.am_enabler = QCheckBox(self.tr("Enable answering machine")) # Checkbox to enable/disable answering machine
-        self.am_enabler.setChecked(True)
         self.am_text = QLineEdit() # Answering machines text.
         self.am_text.setText(self.tr("PyPomo: Hi, my master is not able to answer you right now, you have to wait. He may will be able at $AnswerTime"))
         am_label = QLabel(self.tr("&Answer:"))
@@ -122,7 +120,6 @@ class Form(QDialog):
         # Answering machine configuration group:
         am_group = QGroupBox(self.tr("Answering machines massage"))
         am_group_layout = QVBoxLayout()
-        am_group_layout.addWidget(self.am_enabler)
         am_group_layout.addWidget(am_label)
         am_group_layout.addWidget(self.am_text)
         am_group_layout.addWidget(am_tip)
@@ -222,8 +219,7 @@ class Form(QDialog):
         # Every seccond it will generate a self.pomo_timer.timeout() after evry
         # Signal update_pomo_prog will call.
         self.pomo_timer.start(1000)
-        if self.am_enabler.isChecked():
-            self.chat_answer_machine()
+        self.chat_answer_machine()
 
     def update_pomo_prog(self):
         # The following expression will calcualte that how much is 1 seccond from 25 minutes
@@ -328,8 +324,15 @@ class Form(QDialog):
         self.sys_try_icon.setIcon(QIcon(self.yellow_icon_path))
         
     def play_ding(self):
+        from PyQt4.phonon import Phonon
+        self.m_media = Phonon.MediaObject(self)
+        audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
+        Phonon.createPath(self.m_media, audioOutput)
+        self.m_media.setCurrentSource(Phonon.MediaSource(Phonon.MediaSource(self.ding_sound_path)))
+        self.m_media.play()
+
         # use mplayer to play ding sound
-        call(["mplayer", self.ding_sound_path]) # this is subprocess call function
+        #call(["mplayer", self.ding_sound_path]) # this is subprocess call function
                                              # and I used it to play a ding sound
         
     def var_init(self):
