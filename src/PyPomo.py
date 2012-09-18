@@ -2,9 +2,11 @@
 
 import sys
 import os
+import re
 from   subprocess   import call
 from   PyQt4.QtGui  import *
 from   PyQt4.QtCore import *
+import answering_machine
 
 class Form(QDialog):
     def __init__(self, parent = None):
@@ -17,22 +19,43 @@ class Form(QDialog):
         self.yellow_icon_path = os.path.join(src_dir, "graphics", "yellow_icon.svg")
         self.ding_sound_path = os.path.join(src_dir, "sounds", "ding.wav")
         # UI initializer
+        # This flag will helps python to run answering_machine module just one time.
+        # if it's doing it more than one time (Such as interrupt/restart function call)
+        # program will die with a segmentation fault problem.
+        self.am_run_count = 0
         self.setupUi()
-        
-    def setupUi(self):
 
+    def systemtry_icon(self):
         # its icon initialized in self.var_init to automatic reset the icon after the reset pressed
         self.sys_try_icon = QSystemTrayIcon(self)
         self.sys_try_icon.setToolTip("PyPomo Time management system")
+        self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
+        # Show systemtry icon
+        self.sys_try_icon.show()
+        
+    def setupUi(self):
+        # First of all setup the systemtry Icon
+        self.systemtry_icon()
 
+        # System tray menus actions:
+        self.exit_action = QAction("Quit", self)
+        self.start_action = QAction("Start", self)
+        self.interrupt_action = QAction("Interrupt", self)
+        self.reset_action = QAction("Reset", self)
+        self.show_window_action = QAction("Show Window", self)
         # This two buttons have parent! now I can disable and enable theme.
         self.start_button = QPushButton(self.tr("&Start"))
         self.interrupt_button = QPushButton(self.tr("&Interrupt"))
-        close_button = QPushButton(self.tr("&Close"))
+        close_button = QPushButton(self.tr("&Quit"))
         reset_button = QPushButton(self.tr("&Reset"))
 
         # it's the operations flag. it has three types: pomo, rest, long-rest
         self.flag = None
+
+        # Tab widget initializer:
+        tab_widget = QTabWidget()
+        main_tab = QWidget() # Main tab
+        self.config_tab = QWidget() # config tab
 
         # it's the number of done pomodoros. if total_pomo % 4 == 0 then user can
         # tak a long rest.
@@ -41,7 +64,13 @@ class Form(QDialog):
         self.stop_label = QLabel()
         self.status_label = QLabel()
         self.total_label = QLabel()
-
+        self.am_text = QLineEdit() # Answering machines text.
+        self.am_text.setText(self.tr("PyPomo: Hi, my master is not able to answer you right now, you have to wait. He may will be able at $AnswerTime"))
+        am_label = QLabel(self.tr("&Answer:"))
+        am_label.setBuddy(self.am_text)
+        am_tip = QLabel(self.tr("<strong>Tip</strong>: You can use <strong>$AnswerTime</strong> tag to show your pomodoros end time! "))
+        pomo_time_label = QLabel(self.tr("Pomodoro Timer:"))
+        rest_time_label = QLabel(self.tr("Rest Timer:"))
         # This is the pomodoro timers progress bar
         self.pomo_time_progress = QProgressBar()
         # This is the rest timers progress bar
@@ -54,21 +83,9 @@ class Form(QDialog):
         self.var_init()
 
         # Radio buttons initialized. and long rest radio button is checked
-        self.rdobtn_short_rest = QRadioButton(self.tr("&Short Rest (15 min)"))
-        self.rdobtn_long_rest = QRadioButton(self.tr("&Long Rest (25 min)"))
+        self.rdobtn_short_rest = QRadioButton(self.tr("&Short (15 min)"))
+        self.rdobtn_long_rest = QRadioButton(self.tr("&Long (25 min)"))
         self.rdobtn_long_rest.setChecked(True)
-
-    # SIGNAL/SLOT:
-
-        # Timeout signal for pomo and rest timer
-        self.pomo_timer.timeout.connect(self.update_pomo_prog)
-        self.rest_timer.timeout.connect(self.update_rest_prog)
-
-        # Buttons clicked signals
-        self.start_button.clicked.connect(self.run_pomo)
-        self.interrupt_button.clicked.connect(self.interrupt_func)
-        reset_button.clicked.connect(self.reset_func)
-        close_button.clicked.connect(qApp.quit)
 
         rest_rdo_group = QGroupBox(self.tr("Long rest configuration"))
         rdo_layout = QHBoxLayout()
@@ -83,7 +100,9 @@ class Form(QDialog):
         time_group.setLayout(time_label_layout)
 
         prog_layout = QVBoxLayout()
+        prog_layout.addWidget(pomo_time_label)
         prog_layout.addWidget(self.pomo_time_progress)
+        prog_layout.addWidget(rest_time_label)
         prog_layout.addWidget(self.rest_time_progress)
 
         state_group = QGroupBox(self.tr("State"))
@@ -97,34 +116,110 @@ class Form(QDialog):
         btn_layout.addWidget(self.interrupt_button)
         btn_layout.addWidget(reset_button)
         btn_layout.addWidget(close_button)
-        
-        layout = QGridLayout()
-        layout.addWidget(time_group, 0, 0, 1, 2)
-        layout.addLayout(prog_layout, 1, 0)
-        layout.addWidget(state_group, 1, 1)
-        layout.addWidget(rest_rdo_group, 2, 0, 1, 2)
-        layout.addLayout(btn_layout, 3, 0, 1, 2)
-        self.setLayout(layout)
 
+        # Answering machine configuration group:
+        am_group = QGroupBox(self.tr("Answering machines massage"))
+        am_group_layout = QVBoxLayout()
+        am_group_layout.addWidget(am_label)
+        am_group_layout.addWidget(self.am_text)
+        am_group_layout.addWidget(am_tip)
+        am_group.setLayout(am_group_layout)
+
+        # Main_tab layout:
+        mt_layout = QGridLayout(main_tab)
+        mt_layout.addWidget(time_group, 0, 0, 1, 2)
+        mt_layout.addLayout(prog_layout, 1, 0, 2, 1)
+        mt_layout.addWidget(state_group, 1, 1, 2, 1)
+        mt_layout.addLayout(btn_layout, 3, 0, 1, 2)
+
+        # Config_tab layout:
+        ct_layout = QGridLayout(self.config_tab)
+        ct_layout.addWidget(rest_rdo_group, 0, 0, 1, 2)
+        ct_layout.addWidget(am_group, 1, 0, 1, 2)
+
+        # Add widgets to the tabs. 
+        tab_widget.addTab(main_tab, self.tr("&Main"))
+        tab_widget.addTab(self.config_tab, self.tr("&Configure"))
+
+        # Add tab widget to the main dialog window
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(tab_widget)
+
+        self.setLayout(main_layout)
+
+        try_menu = QMenu()
+        try_menu.addAction(self.show_window_action)
+        try_menu.addSeparator()
+        try_menu.addAction(self.start_action)
+        try_menu.addAction(self.interrupt_action)
+        try_menu.addAction(self.reset_action)
+        try_menu.addSeparator()
+        try_menu.addAction(self.exit_action)
+        self.sys_try_icon.setContextMenu(try_menu)
+        
+        # SIGNAL/SLOT:
+        # Timeout signal for pomo and rest timer
+        self.pomo_timer.timeout.connect(self.update_pomo_prog)
+        self.rest_timer.timeout.connect(self.update_rest_prog)
+
+        # Buttons clicked signals
+        self.start_button.clicked.connect(self.run_pomo)
+        self.interrupt_button.clicked.connect(self.interrupt_func)
+        reset_button.clicked.connect(self.reset_func)
+        close_button.clicked.connect(qApp.quit)
+        self.sys_try_icon.activated['QSystemTrayIcon::ActivationReason'].connect(self.show_window)
+
+        self.exit_action.triggered.connect(qApp.quit)
+        self.start_action.triggered.connect(self.run_pomo)
+        self.interrupt_action.triggered.connect(self.interrupt_func)
+        self.reset_action.triggered.connect(self.reset_func)
+        self.show_window_action.triggered.connect(lambda x: self.setVisible(True))
+        
         # Root window property
         self.setWindowTitle(self.tr("PyPomo"))
         self.setWindowIcon(QIcon(self.red_icon_path))
 
-        # Show systemtry icon
-        self.sys_try_icon.show()
+    def show_window(self, reason):
+        """
+        This function will use to show the window again after user minimized it.
+        """
+        # The reason will send from QSystemTrayIcon::ActivationReason!
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.setVisible(True)
+
+    def closeEvent(self, event):
+        """
+        This function will re implement closeEvent function. This will happen
+        when the user close the window by 'X' button or so.
+        """
+        # Here I ignored the event that will close the window
+        event.ignore()
+        # To have same effect I just called done function that who know what to do!
+        self.done('closeEvent')
+        
+    def done(self, r):
+        """
+        This function will re implement done function. This will happen when the user
+        use 'ESC' button to close the dialog window.
+        """
+        # This will make the dialog window invisible!
+        self.setVisible(False)
         
     def run_pomo(self):
         # If it's pomodoro time start button has to be disabled and interrupt button
         self.start_button.setEnabled(False)
+        self.start_action.setEnabled(False)
         self.interrupt_button.setEnabled(True)
-
+        self.interrupt_action.setEnabled(True)
+        self.config_tab.setEnabled(False)
+        self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
         # Set the flag to retrive currct information in update_labels function
         self.flag = 'Pomodoro'
         self.update_labels(self.flag)
-
         # Every seccond it will generate a self.pomo_timer.timeout() after evry
         # Signal update_pomo_prog will call.
         self.pomo_timer.start(1000)
+        self.chat_answer_machine()
 
     def update_pomo_prog(self):
         # The following expression will calcualte that how much is 1 seccond from 25 minutes
@@ -184,24 +279,26 @@ class Form(QDialog):
             self.rest_timer.stop()
             # Enable start button and disable interrupt. 
             self.start_button.setEnabled(True)
+            self.start_action.setEnabled(True)
             self.interrupt_button.setEnabled(False)
+            self.interrupt_action.setEnabled(False)
             self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
 
     def update_labels(self, flag):
         current_time = QTime.currentTime()
         if flag == 'Pomodoro':
-            stop_time = current_time.addSecs(25 * 60) # it'll show 25 minutes later ;-)
+            self.stop_time = current_time.addSecs(25 * 60) # it'll show 25 minutes later ;-)
         elif flag == 'Rest':
-            stop_time = current_time.addSecs(5 * 60) # it'll show 5 minutes later
+            self.stop_time = current_time.addSecs(5 * 60) # it'll show 5 minutes later
         elif flag == 'Long Rest':
             # calculate the proper stop time. it'll be different on rest times.
             if self.rdobtn_short_rest.isChecked():
-                stop_time = current_time.addSecs(15 * 60)
+                self.stop_time = current_time.addSecs(15 * 60)
             elif self.rdobtn_long_rest.isChecked():
-                stop_time = current_time.addSecs(25 * 60) 
+                self.stop_time = current_time.addSecs(25 * 60) 
 
         self.start_label.setText(self.tr("Start Time: %s" % current_time.toString()))
-        self.stop_label.setText(self.tr("Stop Time: %s" % stop_time.toString()))
+        self.stop_label.setText(self.tr("Stop Time: %s" % self.stop_time.toString()))
         self.status_label.setText(self.tr("Status: %s" % flag))
         self.total_label.setText(self.tr("Pomodoros: %d" % self.total_pomo))
 
@@ -227,8 +324,15 @@ class Form(QDialog):
         self.sys_try_icon.setIcon(QIcon(self.yellow_icon_path))
         
     def play_ding(self):
+        from PyQt4.phonon import Phonon
+        self.m_media = Phonon.MediaObject(self)
+        audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
+        Phonon.createPath(self.m_media, audioOutput)
+        self.m_media.setCurrentSource(Phonon.MediaSource(Phonon.MediaSource(self.ding_sound_path)))
+        self.m_media.play()
+
         # use mplayer to play ding sound
-        call(["mplayer", self.ding_sound_path]) # this is subprocess call function
+        #call(["mplayer", self.ding_sound_path]) # this is subprocess call function
                                              # and I used it to play a ding sound
         
     def var_init(self):
@@ -242,21 +346,37 @@ class Form(QDialog):
         self.rest_time_progress.setValue(0)
         self.pomo_step = 0
         self.rest_step = 0
-        self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
         self.interrupt_button.setEnabled(False)
+        self.interrupt_action.setEnabled(False)
         self.start_button.setEnabled(True)
+        self.start_action.setEnabled(True)
+        # It has to be here. After a reset you'll need it :D
+        self.sys_try_icon.setIcon(QIcon(self.red_icon_path))
+        self.config_tab.setEnabled(True)
         
     def reset_func(self):
         # Stop every thing and make program clean!
         self.rest_timer.stop()
         self.pomo_timer.stop()
         self.var_init()
+
+    def chat_answer_machine(self):
+        # Here PyPomo will search if there is a tag like '$AnswerTime' replace it with current session stop time.
+        message = str(self.am_text.text())
+        time_tag = re.compile(r'\$AnswerTime')
+        search_tag = re.search(time_tag, message)
+        if search_tag:
+            message = re.sub(r'\$AnswerTime', str(self.stop_time.toString()), message)
+        if self.am_run_count == 0:
+            answering_machine.DBus_Answer(message)
+            self.am_run_count += 1
         
 def main():
     app = QApplication(sys.argv)
     run = Form()
     run.show()
     sys.exit(app.exec_())
+    
 
 if __name__ == "__main__":
     main()

@@ -26,7 +26,7 @@ def read(fname):
     
 setup(
     name = "PyPomo",
-    version = "0.5.0",
+    version = "0.6.0",
     author = "Shahin Azad",
     author_email = "ishahinism@gmail.com",
     include_package_data = True,
