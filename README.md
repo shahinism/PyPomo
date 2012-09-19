@@ -13,6 +13,24 @@ Snapshot
 =====
 ![My image](https://raw.github.com/shahinism/PyPomo/master/Snapshots/window.png)
 
+Changes
+=====
+v0.6.0, Tue Sep 18 15:49:04 IRDT 2012
+
+* Minimize to system try added. All close action except
+   close button will minimize the window.
+
+* System tray icon has a control menu that can be use to control
+   PyPomo
+
+* Answering machine added. for now it can answer pidgin chat. and
+   user can't disable it.
+
+* instead of playing sound with mplayer in last version, now it uses
+   PyQt4.phonon module to play sounds.
+
+v0.5.0, Tue Sep 10 18:12:26 IRDT 2012 -- Initial release.
+
 Installation
 =====
 
@@ -42,3 +60,7 @@ Thanks to:
 
 I have to say thank you to "Francesco Cirillo" for inventing this great time
 management system. then, Thank you Francesco :-*
+
+Known bugs:
+=====
+* The answering machine can't disable after the first run! 
