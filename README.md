@@ -15,6 +15,10 @@ Snapshot
 
 Changes
 =====
+v0.6.3, Wed Sep 19 13:06:13 IRDT 2012
+
+* Answering machine now can be disabled!
+
 v0.6.0, Tue Sep 18 15:49:04 IRDT 2012
 
 * Minimize to system try added. All close action except
@@ -63,4 +67,6 @@ management system. then, Thank you Francesco :-*
 
 Known bugs:
 =====
+
+fixed:
 * The answering machine can't disable after the first run! 

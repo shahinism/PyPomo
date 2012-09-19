@@ -1,6 +1,3 @@
 This features has to be added in PyPomo in next versions:
 
-* Answering machine madule has to be capable answer other
-  chat clients like: empathy, xchat ...
-
 * gui module has to be separated from main program.
