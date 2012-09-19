@@ -3,7 +3,6 @@
 import sys
 import os
 import re
-from   subprocess   import call
 from   PyQt4.QtGui  import *
 from   PyQt4.QtCore import *
 import answering_machine
@@ -18,11 +17,8 @@ class Form(QDialog):
         self.green_icon_path = os.path.join(src_dir, "graphics", "green_icon.svg")
         self.yellow_icon_path = os.path.join(src_dir, "graphics", "yellow_icon.svg")
         self.ding_sound_path = os.path.join(src_dir, "sounds", "ding.wav")
+
         # UI initializer
-        # This flag will helps python to run answering_machine module just one time.
-        # if it's doing it more than one time (Such as interrupt/restart function call)
-        # program will die with a segmentation fault problem.
-        self.am_run_count = 0
         self.setupUi()
 
     def systemtry_icon(self):
@@ -76,6 +72,11 @@ class Form(QDialog):
         # This is the rest timers progress bar
         self.rest_time_progress = QProgressBar()
 
+        # This check box will appear in configure tab to help user to enable/disable
+        # answering machine function
+        self.am_enabler = QCheckBox(self.tr("&Enable Answering Machine"))
+        self.am_enabler.setChecked(True)
+
         # rest/pomo timers. I will use them to take time for pomodoros and rests times.
         self.pomo_timer = QTimer()
         self.rest_timer = QTimer()
@@ -121,6 +122,7 @@ class Form(QDialog):
         am_group = QGroupBox(self.tr("Answering machines massage"))
         am_group_layout = QVBoxLayout()
         am_group_layout.addWidget(am_label)
+        am_group_layout.addWidget(self.am_enabler)
         am_group_layout.addWidget(self.am_text)
         am_group_layout.addWidget(am_tip)
         am_group.setLayout(am_group_layout)
@@ -219,7 +221,9 @@ class Form(QDialog):
         # Every seccond it will generate a self.pomo_timer.timeout() after evry
         # Signal update_pomo_prog will call.
         self.pomo_timer.start(1000)
-        self.chat_answer_machine()
+        
+        if self.am_enabler.isChecked():
+            self.chat_answer_machine()
 
     def update_pomo_prog(self):
         # The following expression will calcualte that how much is 1 seccond from 25 minutes
@@ -306,9 +310,10 @@ class Form(QDialog):
         """
         This function is a little wierd! I have to modify it later!
         """
+        # Disable answering machine:
+        answering_machine.connect_dbus(flag = 'block')
         # after interrupt user have to do another pomodoro!
         self.flag = "Pomodoro"
-
         # stop timers. Don't do anything else!
         self.rest_timer.stop()
         self.pomo_timer.stop()
@@ -355,6 +360,8 @@ class Form(QDialog):
         self.config_tab.setEnabled(True)
         
     def reset_func(self):
+        # Disable answering machine:
+        answering_machine.connect_dbus(flag = 'block')
         # Stop every thing and make program clean!
         self.rest_timer.stop()
         self.pomo_timer.stop()
@@ -367,9 +374,8 @@ class Form(QDialog):
         search_tag = re.search(time_tag, message)
         if search_tag:
             message = re.sub(r'\$AnswerTime', str(self.stop_time.toString()), message)
-        if self.am_run_count == 0:
-            answering_machine.DBus_Answer(message)
-            self.am_run_count += 1
+        answering_machine.connect_dbus(message)
+
         
 def main():
     app = QApplication(sys.argv)

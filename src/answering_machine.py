@@ -2,29 +2,34 @@
 
 import sys
 import dbus
+import gobject
 from PyQt4.QtGui import QApplication
-from PyQt4.QtCore import Qt
 from dbus.mainloop.qt import DBusQtMainLoop
 
-class DBus_Answer():
-    def __init__(self, text):
-        self.answer = text
-        bus_loop = DBusQtMainLoop(set_as_default=True)
-        self.bus = dbus.SessionBus()
-        self.bus.add_signal_receiver(self.pidgin_control_func,
-                                     dbus_interface="im.pidgin.purple.PurpleInterface",
-                                     signal_name="ReceivedImMsg")
-        
-    def pidgin_control_func(self, account, sender, message, conversation, flags):
-        obj = self.bus.get_object("im.pidgin.purple.PurpleService", "/im/pidgin/purple/PurpleObject")
-        purple = dbus.Interface(obj, "im.pidgin.purple.PurpleInterface")
+bus_loop = DBusQtMainLoop(set_as_default=True)
+answer = ""
+
+def connect_dbus(text = "", flag = "message"):
+    global answer
+    answer = text
+    if flag == "message":
+        bus = dbus.SessionBus()
+        bus.add_signal_receiver(pidgin_control_func,
+                                dbus_interface="im.pidgin.purple.PurpleInterface",
+                                signal_name="ReceivedImMsg")
+
+def pidgin_control_func(account, sender, message, conversation, flags):
+    bus = dbus.SessionBus()
+    obj = bus.get_object("im.pidgin.purple.PurpleService", "/im/pidgin/purple/PurpleObject")
+    purple = dbus.Interface(obj, "im.pidgin.purple.PurpleInterface")
         # This condition is here to check if I want to chat by myself, make class do
         # not answer me, and this will be helpful to avoid that endless loop of answer.
         # that bad bug I mean :D
 
-        #if purple.PurpleAccountGetUsername(account) != sender:
-        purple.PurpleConvImSend(purple.PurpleConvIm(conversation), self.answer)
-        
+    if purple.PurpleAccountGetUsername(account) != sender:
+        purple.PurpleConvImSend(purple.PurpleConvIm(conversation), answer)
+
+    
 def main(message):
     # This signal function call and the line after that is here
     # to help me Quit after pressing 'Ctrl+C'
@@ -34,7 +39,7 @@ def main(message):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     app = QApplication([])
-    run = DBus_Answer(message)
+    connect_dbus(message, "message")
     app.exec_()
 
 if __name__ == "__main__":
