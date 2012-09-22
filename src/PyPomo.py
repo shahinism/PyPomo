@@ -329,12 +329,15 @@ class Form(QDialog):
         self.sys_try_icon.setIcon(QIcon(self.yellow_icon_path))
         
     def play_ding(self):
-        from PyQt4.phonon import Phonon
-        self.m_media = Phonon.MediaObject(self)
-        audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
-        Phonon.createPath(self.m_media, audioOutput)
-        self.m_media.setCurrentSource(Phonon.MediaSource(Phonon.MediaSource(self.ding_sound_path)))
-        self.m_media.play()
+        try:
+            from PyQt4.phonon import Phonon
+            self.m_media = Phonon.MediaObject(self)
+            audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
+            Phonon.createPath(self.m_media, audioOutput)
+            self.m_media.setCurrentSource(Phonon.MediaSource(Phonon.MediaSource(self.ding_sound_path)))
+            self.m_media.play()
+        except:
+            print "I can't play sound. for that you need to install phonon on you distribution ;-)"
 
         # use mplayer to play ding sound
         #call(["mplayer", self.ding_sound_path]) # this is subprocess call function
