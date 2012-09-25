@@ -248,6 +248,8 @@ class Form(QDialog):
             self.rest_time_func()
 
     def rest_time_func(self):
+        # Disable answering machine:
+        answering_machine.connect_dbus(flag = 'block')
         # If user did 4 pomodoro, it's time to take a long rest!
         if self.total_pomo % 4 == 0:
             self.flag = 'Long Rest'
