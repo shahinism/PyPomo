@@ -2,7 +2,6 @@
 
 import sys
 import dbus
-import gobject
 from PyQt4.QtGui import QApplication
 from dbus.mainloop.qt import DBusQtMainLoop
 
@@ -39,7 +38,7 @@ def main(message):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     app = QApplication([])
-    connect_dbus(message, "message")
+    connect_dbus(message)
     app.exec_()
 
 if __name__ == "__main__":
