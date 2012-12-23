@@ -3,6 +3,8 @@ import os
 try:
     from setuptools import setup, find_packages
 except ImportError, e:
+    from distribute import setup, find_packages
+except ImportError, e:
     print "You need to install Python setuptools or distutils first!"
     exit(1)
     
